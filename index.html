@@ -1,0 +1,2002 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PulseTown 3D - Final Simulation Master Build</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #87ceeb;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        user-select: none;
+      }
+      canvas {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #hud {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 16px 20px;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        min-width: 250px;
+        max-height: 85vh;
+        overflow-y: auto;
+        z-index: 10;
+      }
+
+      #time-hud {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 14px 20px;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        font-weight: bold;
+        font-size: 15px;
+        color: #1e3a8a;
+        z-index: 10;
+        min-width: 180px;
+        text-align: center;
+      }
+
+      .bar-bg {
+        width: 100%;
+        height: 10px;
+        background: #eee;
+        border-radius: 5px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+      #wellness-bar {
+        width: 100%;
+        height: 100%;
+        background: #4caf50;
+        transition: width 0.3s;
+      }
+      #water-bar {
+        width: 100%;
+        height: 100%;
+        background: #2196f3;
+        transition: width 0.3s;
+      }
+      #hospital-bar {
+        width: 30%;
+        height: 100%;
+        background: #d32f2f;
+        transition: width 0.3s;
+      }
+
+      #toast {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(33, 33, 33, 0.95);
+        color: #fff;
+        padding: 12px 28px;
+        border-radius: 30px;
+        font-size: 15px;
+        font-weight: bold;
+        display: none;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      #modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+      }
+      #modal-content {
+        background: white;
+        padding: 40px;
+        border-radius: 16px;
+        text-align: center;
+        max-width: 450px;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+      }
+      #modal-title {
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 0;
+        margin-bottom: 15px;
+      }
+      #modal-text {
+        font-size: 16px;
+        color: #444;
+        margin-bottom: 25px;
+        line-height: 1.5;
+      }
+      #modal-btn {
+        padding: 12px 28px;
+        background: #2e7d32;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      #modal-btn:hover {
+        background: #1b5e20;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hud">
+      <div style="font-weight: bold; font-size: 16px; color: #2e7d32">
+        PULSETOWN 3D
+      </div>
+      <div style="font-size: 12px; color: #666; margin-bottom: 10px">
+        Simulation & Role-Play Edition
+      </div>
+
+      <div>Village Wellness: <strong id="val-wellness">100%</strong></div>
+      <div class="bar-bg"><div id="wellness-bar"></div></div>
+
+      <div style="margin-top: 10px">
+        Water Reserve: <strong id="val-water">100%</strong>
+      </div>
+      <div class="bar-bg"><div id="water-bar"></div></div>
+
+      <div style="margin-top: 10px">
+        Hospital Priority: <strong id="val-hospital">30%</strong>
+      </div>
+      <div class="bar-bg"><div id="hospital-bar"></div></div>
+
+      <div style="margin-top: 10px">
+        Water to Hospital: <strong id="val-allocation">60%</strong>
+        <input
+          type="range"
+          id="allocation-slider"
+          min="0"
+          max="100"
+          value="60"
+          style="width: 100%"
+        />
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 12px 0" />
+      <div style="font-size: 12px; color: #444">
+        • W/Up: <strong style="color: #2e7d32">Accelerate</strong> | S/Down:
+        <strong style="color: #d32f2f">Brake (Hold 2s to Reverse)</strong><br />
+        • A/D or Left/Right: <strong style="color: #1565c0">Steer</strong> |
+        <strong style="color: #ff9800">SPACE: Drift</strong><br />
+        •
+        <strong style="color: #1565c0">ENTER Key: Get In/Out of Roadster</strong
+        ><br />
+        • Click <strong style="color: #ff6f00">Tolly</strong> at Toll Pillar to
+        Toggle Gates
+      </div>
+    </div>
+
+    <div id="time-hud">Day 1 | 06:00<br />🌅 Morning</div>
+    <div id="toast">Alert Message</div>
+
+    <div id="modal-overlay">
+      <div id="modal-content">
+        <h2 id="modal-title">Game Over</h2>
+        <p id="modal-text">Message here</p>
+        <button id="modal-btn" onclick="startNewGame()">Start New Game</button>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+      // ==========================================
+      // 1. GAME STATE & GLOBAL VARIABLES
+      // ==========================================
+      let wellness = 100;
+      let waterReserve = 100;
+      let isGateOpen = true;
+      let waterRouting = "TOWN";
+      let gateTimer = 0;
+
+      let hospitalNeed = 30;
+      let hospitalWaterAllocation = 60;
+      let eventTick = 0;
+
+      let gameTimeMinutes = 360;
+      let currentDay = 1;
+      let gameEnded = false;
+      const clock = new THREE.Clock();
+
+      let isDriving = false;
+      let carSpeed = 0;
+      let carHeading = -Math.PI / 2;
+      let brakeHoldTimer = 0;
+
+      let dualBarriers = [];
+      let clickableObjects = [];
+      let tank,
+        hospBodyBox,
+        pArmL,
+        pArmR,
+        pLegL,
+        pLegR,
+        pBodyRig,
+        playerGroup,
+        sportsCar;
+      let carWheels = [];
+      let frontLeftAssembly, frontRightAssembly;
+
+      let tollyArmPivot;
+      let tollyRedLightMat, tollyGreenLightMat;
+
+      const keys = {
+        w: false,
+        a: false,
+        s: false,
+        d: false,
+        ArrowUp: false,
+        ArrowDown: false,
+        ArrowLeft: false,
+        ArrowRight: false,
+        Enter: false,
+        " ": false,
+      };
+
+      window.addEventListener("keydown", (e) => {
+        if (gameEnded) return;
+        if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
+
+        if (e.key === "Enter") {
+          if (!isDriving) {
+            const dist = playerGroup.position.distanceTo(sportsCar.position);
+            if (dist < 25) {
+              isDriving = true;
+              playerGroup.visible = false;
+              showToast(
+                "Entered Roadster! W accelerates, S brakes & reverses.",
+              );
+            } else {
+              showToast("Get closer to the roadster to enter!");
+            }
+          } else {
+            isDriving = false;
+            carSpeed = 0;
+            brakeHoldTimer = 0;
+            playerGroup.position.set(
+              sportsCar.position.x - 7,
+              30,
+              sportsCar.position.z,
+            );
+            playerGroup.visible = true;
+            showToast("Exited vehicle.");
+          }
+        }
+      });
+
+      window.addEventListener("keyup", (e) => {
+        if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
+      });
+
+      // ==========================================
+      // 2. SCENE, CAMERA, & LIGHTING
+      // ==========================================
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x87ceeb);
+      scene.fog = new THREE.FogExp2(0x87ceeb, 0.0015);
+
+      const camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        1,
+        3000,
+      );
+      camera.position.set(30, 95, 0);
+
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        preserveDrawingBuffer: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.maxPolarAngle = Math.PI / 2.1;
+      controls.enablePan = false;
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x445544, 0.7);
+      scene.add(hemiLight);
+
+      const sun = new THREE.DirectionalLight(0xfffae0, 1.4);
+      sun.position.set(200, 300, 150);
+      sun.castShadow = true;
+      sun.shadow.mapSize.width = 1024;
+      sun.shadow.mapSize.height = 1024;
+      sun.shadow.camera.left = -350;
+      sun.shadow.camera.right = 350;
+      sun.shadow.camera.top = 350;
+      sun.shadow.camera.bottom = -350;
+      scene.add(sun);
+
+      function enableShadows(group) {
+        group.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+      }
+
+      // ==========================================
+      // 3. TEXTURE GENERATOR FOR MINIFIGURE (SHADES)
+      // ==========================================
+      function createFaceTex() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#f5c49b";
+        ctx.fillRect(0, 0, 256, 256);
+
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(63, 85, 52, 38);
+        ctx.fillRect(141, 85, 52, 38);
+        ctx.fillRect(115, 95, 26, 8);
+        ctx.fillRect(45, 95, 18, 10);
+        ctx.fillRect(193, 95, 18, 10);
+
+        ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+        ctx.beginPath();
+        ctx.moveTo(65, 87);
+        ctx.lineTo(85, 87);
+        ctx.lineTo(75, 120);
+        ctx.lineTo(65, 120);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(143, 87);
+        ctx.lineTo(163, 87);
+        ctx.lineTo(153, 120);
+        ctx.lineTo(143, 120);
+        ctx.fill();
+
+        ctx.strokeStyle = "#1a1614";
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(96, 184);
+        ctx.quadraticCurveTo(128, 202, 160, 184);
+        ctx.stroke();
+
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      function createTorsoTex() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#111111";
+        ctx.fillRect(0, 0, 256, 256);
+        ctx.fillStyle = "#3e1757";
+        ctx.beginPath();
+        ctx.moveTo(76, 68);
+        ctx.lineTo(180, 68);
+        ctx.lineTo(166, 256);
+        ctx.lineTo(90, 256);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "#6f3199";
+        ctx.lineWidth = 3;
+        for (let x = 86; x <= 170; x += 11) {
+          ctx.beginPath();
+          ctx.moveTo(x, 70);
+          ctx.lineTo(x + (x < 128 ? -5 : 5), 256);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(104, 0);
+        ctx.lineTo(152, 0);
+        ctx.lineTo(128, 54);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#260e36";
+        ctx.beginPath();
+        ctx.moveTo(122, 34);
+        ctx.lineTo(134, 34);
+        ctx.lineTo(138, 48);
+        ctx.lineTo(133, 140);
+        ctx.lineTo(128, 150);
+        ctx.lineTo(123, 140);
+        ctx.lineTo(118, 48);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#111111";
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(104, 0);
+        ctx.lineTo(76, 94);
+        ctx.lineTo(24, 256);
+        ctx.lineTo(0, 256);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(256, 0);
+        ctx.lineTo(152, 0);
+        ctx.lineTo(180, 94);
+        ctx.lineTo(232, 256);
+        ctx.lineTo(256, 256);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = "#888888";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(104, 0);
+        ctx.lineTo(76, 94);
+        ctx.lineTo(88, 160);
+        ctx.lineTo(24, 256);
+        ctx.moveTo(152, 0);
+        ctx.lineTo(180, 94);
+        ctx.lineTo(168, 160);
+        ctx.lineTo(232, 256);
+        ctx.stroke();
+
+        return new THREE.CanvasTexture(canvas);
+      }
+
+      // ==========================================
+      // 4. RIGGED MINIFIGURE
+      // ==========================================
+      playerGroup = new THREE.Group();
+
+      const skinColorMat = new THREE.MeshStandardMaterial({
+        color: 0xf5c49b,
+        roughness: 0.6,
+      });
+      const suitBlackMat = new THREE.MeshStandardMaterial({
+        color: 0x141414,
+        roughness: 0.8,
+      });
+      const hairMat = new THREE.MeshStandardMaterial({
+        color: 0x0a0a0a,
+        roughness: 0.35,
+      });
+
+      const faceTex = createFaceTex();
+      const headFaceMat = new THREE.MeshStandardMaterial({
+        map: faceTex,
+        roughness: 0.6,
+      });
+      const headSideMats = [
+        skinColorMat,
+        skinColorMat,
+        skinColorMat,
+        skinColorMat,
+        headFaceMat,
+        skinColorMat,
+      ];
+
+      pHead = new THREE.Mesh(
+        new THREE.BoxGeometry(2.5, 2.7, 2.4),
+        headSideMats,
+      );
+      pHead.position.y = 8.1;
+
+      const hairBase = new THREE.Mesh(
+        new THREE.BoxGeometry(2.7, 1.4, 2.6),
+        hairMat,
+      );
+      hairBase.position.set(0, 9.4, -0.1);
+      const hairPeak = new THREE.Mesh(
+        new THREE.ConeGeometry(0.5, 0.7, 4),
+        hairMat,
+      );
+      hairPeak.rotation.z = Math.PI;
+      hairPeak.position.set(0, 9.2, 1.25);
+      const hairBack = new THREE.Mesh(
+        new THREE.BoxGeometry(2.7, 1.6, 1.0),
+        hairMat,
+      );
+      hairBack.position.set(0, 8.8, -1.0);
+
+      const torsoTex = createTorsoTex();
+      const torsoFrontMat = new THREE.MeshStandardMaterial({
+        map: torsoTex,
+        roughness: 0.7,
+      });
+      const torsoSideMats = [
+        suitBlackMat,
+        suitBlackMat,
+        suitBlackMat,
+        suitBlackMat,
+        torsoFrontMat,
+        suitBlackMat,
+      ];
+
+      pTorso = new THREE.Mesh(
+        new THREE.BoxGeometry(3.6, 4.6, 2.2),
+        torsoSideMats,
+      );
+      pTorso.position.y = 4.6;
+
+      const armGeo = new THREE.BoxGeometry(1.2, 4.2, 1.2);
+      armGeo.translate(0, -1.7, 0);
+      pArmL = new THREE.Mesh(armGeo, suitBlackMat);
+      pArmL.position.set(-2.4, 6.3, 0);
+      pArmR = new THREE.Mesh(armGeo, suitBlackMat);
+      pArmR.position.set(2.4, 6.3, 0);
+
+      const handGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.9, 16);
+      const pHandL = new THREE.Mesh(handGeo, skinColorMat);
+      pHandL.position.set(0, -4.0, 0);
+      pArmL.add(pHandL);
+      const pHandR = new THREE.Mesh(handGeo, skinColorMat);
+      pHandR.position.set(0, -4.0, 0);
+      pArmR.add(pHandR);
+
+      const legGeo = new THREE.BoxGeometry(1.6, 4.8, 1.8);
+      legGeo.translate(0, -2.4, 0);
+      pLegL = new THREE.Mesh(legGeo, suitBlackMat);
+      pLegL.position.set(-0.95, 2.4, 0);
+      pLegR = new THREE.Mesh(legGeo, suitBlackMat);
+      pLegR.position.set(0.95, 2.4, 0);
+
+      pBodyRig = new THREE.Group();
+      pBodyRig.add(
+        pHead,
+        hairBase,
+        hairPeak,
+        hairBack,
+        pTorso,
+        pArmL,
+        pArmR,
+        pLegL,
+        pLegR,
+      );
+      playerGroup.add(pBodyRig);
+
+      playerGroup.position.set(-15, 30, -10);
+      playerGroup.rotation.y = -Math.PI / 2;
+      enableShadows(playerGroup);
+      scene.add(playerGroup);
+
+      // ==========================================
+      // 5. ROOFLESS SHINY BLACK SPORTS ROADSTER
+      // ==========================================
+      sportsCar = new THREE.Group();
+
+      const carBodyMat = new THREE.MeshStandardMaterial({
+        color: 0x0a0a0a,
+        metalness: 0.95,
+        roughness: 0.05,
+      });
+      const interiorMat = new THREE.MeshStandardMaterial({
+        color: 0x1f1f1f,
+        roughness: 0.7,
+      });
+      const glassMat = new THREE.MeshStandardMaterial({
+        color: 0x111111,
+        metalness: 0.9,
+        roughness: 0,
+        transparent: true,
+        opacity: 0.65,
+      });
+
+      const cBase = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 1.8, 18),
+        carBodyMat,
+      );
+      cBase.position.y = 1.9;
+      const cHood = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 1.2, 6.2),
+        carBodyMat,
+      );
+      cHood.position.set(0, 3.2, -5.2);
+      const cBack = new THREE.Mesh(
+        new THREE.BoxGeometry(7.5, 1.6, 5.2),
+        carBodyMat,
+      );
+      cBack.position.set(0, 3.4, 5.8);
+
+      const fairingGeo = new THREE.ConeGeometry(0.9, 2.4, 16);
+      fairingGeo.rotateX(Math.PI / 2);
+      const fairingL = new THREE.Mesh(fairingGeo, carBodyMat);
+      fairingL.position.set(-1.8, 4.4, 3.4);
+      const fairingR = new THREE.Mesh(fairingGeo, carBodyMat);
+      fairingR.position.set(1.8, 4.4, 3.4);
+
+      const cFloor = new THREE.Mesh(
+        new THREE.BoxGeometry(6.6, 0.4, 5.6),
+        interiorMat,
+      );
+      cFloor.position.set(0, 2.2, 0.2);
+      const seatGeo = new THREE.BoxGeometry(2.4, 2.2, 2.0);
+      const seatL = new THREE.Mesh(seatGeo, interiorMat);
+      seatL.position.set(-1.7, 3.2, 1.4);
+      const seatR = new THREE.Mesh(seatGeo, interiorMat);
+      seatR.position.set(1.7, 3.2, 1.4);
+
+      const frontHeadlightMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveIntensity: 1.8,
+        roughness: 0.1,
+      });
+      const rearTaillightMat = new THREE.MeshStandardMaterial({
+        color: 0xff0000,
+        emissive: 0xff0000,
+        emissiveIntensity: 1.8,
+        roughness: 0.1,
+      });
+
+      const hLightL = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.6, 0.3),
+        frontHeadlightMat,
+      );
+      hLightL.position.set(-2.2, 3.0, -8.35);
+      const hLightR = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.6, 0.3),
+        frontHeadlightMat,
+      );
+      hLightR.position.set(2.2, 3.0, -8.35);
+      const tLightL = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.6, 0.3),
+        rearTaillightMat,
+      );
+      tLightL.position.set(-2.2, 3.2, 8.45);
+      const tLightR = new THREE.Mesh(
+        new THREE.BoxGeometry(2.4, 0.6, 0.3),
+        rearTaillightMat,
+      );
+      tLightR.position.set(2.2, 3.2, 8.45);
+
+      const cWindshield = new THREE.Mesh(
+        new THREE.BoxGeometry(7.2, 2.2, 0.25),
+        glassMat,
+      );
+      cWindshield.position.set(0, 4.2, -2.1);
+      cWindshield.rotation.x = -Math.PI / 4.5;
+
+      const wGeo = new THREE.CylinderGeometry(2.2, 2.2, 1.8, 24);
+      wGeo.rotateZ(Math.PI / 2);
+      const wMat = new THREE.MeshStandardMaterial({
+        color: 0x151515,
+        roughness: 0.8,
+      });
+
+      frontLeftAssembly = new THREE.Group();
+      frontLeftAssembly.position.set(-3.9, 2.2, -5);
+      frontLeftAssembly.add(new THREE.Mesh(wGeo, wMat));
+      frontRightAssembly = new THREE.Group();
+      frontRightAssembly.position.set(3.9, 2.2, -5);
+      frontRightAssembly.add(new THREE.Mesh(wGeo, wMat));
+      const wRL = new THREE.Mesh(wGeo, wMat);
+      wRL.position.set(-3.9, 2.2, 5);
+      const wRR = new THREE.Mesh(wGeo, wMat);
+      wRR.position.set(3.9, 2.2, 5);
+
+      carWheels = [
+        frontLeftAssembly.children[0],
+        frontRightAssembly.children[0],
+        wRL,
+        wRR,
+      ];
+
+      sportsCar.add(
+        cBase,
+        cHood,
+        cBack,
+        fairingL,
+        fairingR,
+        cFloor,
+        seatL,
+        seatR,
+        cWindshield,
+        hLightL,
+        hLightR,
+        tLightL,
+        tLightR,
+        frontLeftAssembly,
+        frontRightAssembly,
+        wRL,
+        wRR,
+      );
+      sportsCar.position.set(-15, 30, 0);
+      sportsCar.rotation.y = -Math.PI / 2;
+      enableShadows(sportsCar);
+      scene.add(sportsCar);
+
+      // ==========================================
+      // 6. 3D WATERWAYS & ELEVATED ROADS (Y = 30)
+      // ==========================================
+      const groundMat = new THREE.MeshStandardMaterial({
+        color: 0x558b2f,
+        roughness: 1.0,
+      });
+
+      const bankW = new THREE.Mesh(
+        new THREE.BoxGeometry(270, 30, 600),
+        groundMat,
+      );
+      bankW.position.set(-165, 15, 0);
+      bankW.receiveShadow = true;
+      scene.add(bankW);
+
+      const bankE = new THREE.Mesh(
+        new THREE.BoxGeometry(270, 30, 600),
+        groundMat,
+      );
+      bankE.position.set(165, 15, 0);
+      bankE.receiveShadow = true;
+      scene.add(bankE);
+
+      const riverBed = new THREE.Mesh(
+        new THREE.BoxGeometry(60, 13, 600),
+        new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 }),
+      );
+      riverBed.position.set(0, 6.5, 0);
+      scene.add(riverBed);
+
+      const river = new THREE.Mesh(
+        new THREE.PlaneGeometry(60, 600),
+        new THREE.MeshStandardMaterial({
+          color: 0x0288d1,
+          roughness: 0.1,
+          transparent: true,
+          opacity: 0.85,
+        }),
+      );
+      river.rotation.x = -Math.PI / 2;
+      river.position.set(0, 13.8, 0);
+      scene.add(river);
+
+      const roadMat = new THREE.MeshStandardMaterial({
+        color: 0x424242,
+        roughness: 0.9,
+      });
+      const hRoadHalfGeo = new THREE.PlaneGeometry(268, 40);
+
+      [0, -200, 200].forEach((zPos) => {
+        const rW = new THREE.Mesh(hRoadHalfGeo, roadMat);
+        rW.rotation.x = -Math.PI / 2;
+        rW.position.set(-166, 30.02, zPos);
+        rW.receiveShadow = true;
+        scene.add(rW);
+        const rE = new THREE.Mesh(hRoadHalfGeo, roadMat);
+        rE.rotation.x = -Math.PI / 2;
+        rE.position.set(166, 30.02, zPos);
+        rE.receiveShadow = true;
+        scene.add(rE);
+      });
+
+      const vRoadGeo = new THREE.PlaneGeometry(40, 600);
+      const rLeft = new THREE.Mesh(vRoadGeo, roadMat);
+      rLeft.rotation.x = -Math.PI / 2;
+      rLeft.position.set(-200, 30.02, 0);
+      rLeft.receiveShadow = true;
+      scene.add(rLeft);
+      const rRight = new THREE.Mesh(vRoadGeo, roadMat);
+      rRight.rotation.x = -Math.PI / 2;
+      rRight.position.set(200, 30.02, 0);
+      rRight.receiveShadow = true;
+      scene.add(rRight);
+
+      const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const lineHGeo = new THREE.PlaneGeometry(5, 0.8);
+      const lineVGeo = new THREE.PlaneGeometry(0.8, 5);
+
+      [0, -200, 200].forEach((zPos) => {
+        for (let x = -290; x < 290; x += 10) {
+          if (
+            Math.abs(x) < 32 ||
+            Math.abs(x - 200) < 20 ||
+            Math.abs(x + 200) < 20
+          )
+            continue;
+          let dash = new THREE.Mesh(lineHGeo, lineMat);
+          dash.rotation.x = -Math.PI / 2;
+          dash.position.set(x, 30.03, zPos);
+          scene.add(dash);
+        }
+      });
+      [-200, 200].forEach((xPos) => {
+        for (let z = -290; z < 290; z += 10) {
+          if (
+            Math.abs(z) < 20 ||
+            Math.abs(z - 200) < 20 ||
+            Math.abs(z + 200) < 20
+          )
+            continue;
+          let dash = new THREE.Mesh(lineVGeo, lineMat);
+          dash.rotation.x = -Math.PI / 2;
+          dash.position.set(xPos, 30.03, z);
+          scene.add(dash);
+        }
+      });
+
+      // Railings
+      const railMat = new THREE.MeshStandardMaterial({
+        color: 0xb0bec5,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+      const railZSegments = [
+        { startZ: -260, len: 70 },
+        { startZ: -100, len: 140 },
+        { startZ: 100, len: 140 },
+        { startZ: 260, len: 70 },
+      ];
+      railZSegments.forEach((seg) => {
+        const rGeo = new THREE.CylinderGeometry(0.3, 0.3, seg.len);
+        rGeo.rotateX(Math.PI / 2);
+        const rw = new THREE.Mesh(rGeo, railMat);
+        rw.position.set(-30.5, 31.5, seg.startZ);
+        scene.add(rw);
+        const re = new THREE.Mesh(rGeo, railMat);
+        re.position.set(30.5, 31.5, seg.startZ);
+        scene.add(re);
+      });
+
+      // ==========================================
+      // 7. 3 BRIDGES & AUTHENTIC TOLLY BOT
+      // ==========================================
+      const bridgeGroup = new THREE.Group();
+      const stoneMat = new THREE.MeshStandardMaterial({ color: 0x78909c });
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(44, 2, 64), stoneMat);
+      deck.position.y = -1;
+      bridgeGroup.add(deck);
+
+      [
+        [-16, -12, 15],
+        [16, -12, 15],
+        [-16, -12, -15],
+        [16, -12, -15],
+      ].forEach((pos) => {
+        const p = new THREE.Mesh(new THREE.BoxGeometry(6, 24, 8), stoneMat);
+        p.position.set(...pos);
+        bridgeGroup.add(p);
+      });
+      const bRailL = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 64), stoneMat);
+      bRailL.position.set(-21.5, 1, 0);
+      const bRailR = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 64), stoneMat);
+      bRailR.position.set(21.5, 1, 0);
+      bridgeGroup.add(bRailL, bRailR);
+
+      const b1 = bridgeGroup;
+      b1.position.set(0, 30, 0);
+      b1.rotation.y = Math.PI / 2;
+      enableShadows(b1);
+      scene.add(b1);
+      const b4 = bridgeGroup.clone();
+      b4.position.set(0, 30, 200);
+      b4.rotation.y = Math.PI / 2;
+      scene.add(b4);
+      const b5 = bridgeGroup.clone();
+      b5.position.set(0, 30, -200);
+      b5.rotation.y = Math.PI / 2;
+      scene.add(b5);
+
+      // Toll Plaza
+      const tollPlazaWrapper = new THREE.Group();
+      const tollGroup = new THREE.Group();
+      const boothMat = new THREE.MeshStandardMaterial({ color: 0x90a4ae });
+      const tollBooth1 = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 16, 10),
+        boothMat,
+      );
+      tollBooth1.position.set(-20, 8, 0);
+      tollGroup.add(tollBooth1);
+      const tollBooth2 = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 16, 10),
+        boothMat,
+      );
+      tollBooth2.position.set(0, 8, 0);
+      tollGroup.add(tollBooth2);
+      const tollBooth3 = new THREE.Mesh(
+        new THREE.BoxGeometry(4, 16, 10),
+        boothMat,
+      );
+      tollBooth3.position.set(20, 8, 0);
+      tollGroup.add(tollBooth3);
+      const tollCanopy = new THREE.Mesh(
+        new THREE.BoxGeometry(48, 2.5, 16),
+        new THREE.MeshStandardMaterial({ color: 0x1565c0 }),
+      );
+      tollCanopy.position.set(0, 17, 0);
+      tollGroup.add(tollCanopy);
+      const tollArmMat = new THREE.MeshStandardMaterial({ color: 0xd32f2f });
+      const armGeoGate = new THREE.CylinderGeometry(0.6, 0.6, 18);
+      armGeoGate.translate(0, 9, 0);
+      const armLeft = new THREE.Mesh(armGeoGate, tollArmMat);
+      armLeft.position.set(-18, 4, 2);
+      const armRight = new THREE.Mesh(armGeoGate, tollArmMat);
+      armRight.position.set(2, 4, 2);
+      dualBarriers.push(armLeft, armRight);
+      tollGroup.add(armLeft, armRight);
+      tollPlazaWrapper.add(tollGroup);
+      tollPlazaWrapper.position.set(-70, 30, 0);
+      tollPlazaWrapper.rotation.y = Math.PI / 2;
+      tollPlazaWrapper.name = "tollgate";
+      enableShadows(tollPlazaWrapper);
+      scene.add(tollPlazaWrapper);
+      clickableObjects.push(tollPlazaWrapper);
+
+      // TOLLY BOT
+      tollyGroup = new THREE.Group();
+      const tollyPaperMat = new THREE.MeshStandardMaterial({
+        color: 0xfbf9f5,
+        roughness: 0.85,
+      });
+      const tollyFaceMat = new THREE.MeshBasicMaterial({ color: 0x151515 });
+      tollyRedLightMat = new THREE.MeshStandardMaterial({
+        color: 0xff1744,
+        emissive: 0x200000,
+        roughness: 0.2,
+      });
+      tollyGreenLightMat = new THREE.MeshStandardMaterial({
+        color: 0x00e676,
+        emissive: 0x00e676,
+        emissiveIntensity: 0.8,
+        roughness: 0.2,
+      });
+
+      const tollyBase = new THREE.Mesh(
+        new THREE.BoxGeometry(4.8, 1.3, 4.8),
+        tollyPaperMat,
+      );
+      tollyBase.position.y = 0.65;
+      const baseButtonRed = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16),
+        new THREE.MeshStandardMaterial({ color: 0xd32f2f, roughness: 0.4 }),
+      );
+      baseButtonRed.position.set(-1.5, 1.4, 1.5);
+      const baseButtonGreen = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16),
+        new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.4 }),
+      );
+      baseButtonGreen.position.set(1.5, 1.4, -1.5);
+      const tollyTorso = new THREE.Mesh(
+        new THREE.BoxGeometry(3.0, 4.6, 3.0),
+        tollyPaperMat,
+      );
+      tollyTorso.position.y = 3.6;
+      const tollyHead = new THREE.Mesh(
+        new THREE.BoxGeometry(3.6, 3.0, 3.2),
+        tollyPaperMat,
+      );
+      tollyHead.position.y = 7.4;
+
+      const eyeGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.05, 16);
+      eyeGeo.rotateX(Math.PI / 2);
+      const eyeL = new THREE.Mesh(eyeGeo, tollyFaceMat);
+      eyeL.position.set(-0.75, 7.7, 1.62);
+      const eyeR = new THREE.Mesh(eyeGeo, tollyFaceMat);
+      eyeR.position.set(0.75, 7.7, 1.62);
+      const smileGeo = new THREE.BoxGeometry(0.75, 0.16, 0.05);
+      const smileMouth = new THREE.Mesh(smileGeo, tollyFaceMat);
+      smileMouth.position.set(0, 6.9, 1.62);
+
+      const tollyTower = new THREE.Mesh(
+        new THREE.BoxGeometry(1.1, 2.8, 1.1),
+        tollyPaperMat,
+      );
+      tollyTower.position.set(-1.0, 10.3, 0);
+      const lightGeo = new THREE.SphereGeometry(0.26, 16, 16);
+      const tollyTopGreen = new THREE.Mesh(lightGeo, tollyGreenLightMat);
+      tollyTopGreen.position.set(-1.0, 11.0, 0.58);
+      const tollyTopRed = new THREE.Mesh(lightGeo, tollyRedLightMat);
+      tollyTopRed.position.set(-1.0, 9.7, 0.58);
+
+      tollyArmPivot = new THREE.Group();
+      tollyArmPivot.position.set(1.5, 4.2, 0);
+      const armBarGeo = new THREE.BoxGeometry(4.0, 0.65, 0.35);
+      armBarGeo.translate(2.0, 0, 0);
+      const tollyArmMesh = new THREE.Mesh(armBarGeo, tollyPaperMat);
+      tollyArmPivot.add(tollyArmMesh);
+
+      tollyGroup.add(
+        tollyBase,
+        baseButtonRed,
+        baseButtonGreen,
+        tollyTorso,
+        tollyHead,
+        eyeL,
+        eyeR,
+        smileMouth,
+        tollyTower,
+        tollyTopGreen,
+        tollyTopRed,
+        tollyArmPivot,
+      );
+
+      tollyGroup.position.set(-65, 30, 0);
+      tollyGroup.rotation.y = Math.PI / 2;
+      tollyGroup.name = "tolly";
+      enableShadows(tollyGroup);
+      scene.add(tollyGroup);
+      clickableObjects.push(tollyGroup);
+
+      // Water Tank (With Sign on Top)
+      const towerGroup = new THREE.Group();
+      tank = new THREE.Mesh(
+        new THREE.CylinderGeometry(26, 26, 18, 32),
+        new THREE.MeshStandardMaterial({ color: 0x1976d2 }),
+      );
+      tank.position.y = 30;
+      towerGroup.add(tank);
+
+      function createSignboard(text, bgColor) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 128;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, 512, 128);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 10;
+        ctx.strokeRect(5, 5, 502, 118);
+        ctx.fillStyle = "white";
+        ctx.font = 'bold 64px "Segoe UI", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, 256, 64);
+        const board = new THREE.Mesh(
+          new THREE.BoxGeometry(16, 4, 0.5),
+          new THREE.MeshStandardMaterial({
+            map: new THREE.CanvasTexture(canvas),
+          }),
+        );
+        board.position.y = 6;
+        const poleMat = new THREE.MeshStandardMaterial({ color: 0x795548 });
+        const p1 = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.3, 8),
+          poleMat,
+        );
+        p1.position.set(-6, 2, 0);
+        const p2 = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.3, 0.3, 8),
+          poleMat,
+        );
+        p2.position.set(6, 2, 0);
+        const signGroup = new THREE.Group();
+        signGroup.add(board, p1, p2);
+        return signGroup;
+      }
+
+      const tankSign = createSignboard("WATER TANK", 0x1976d2);
+      tankSign.position.set(0, 40, 0);
+      tankSign.scale.set(1.5, 1.5, 1.5);
+      towerGroup.add(tankSign);
+
+      const towerSupport = new THREE.Mesh(
+        new THREE.CylinderGeometry(4, 4, 26, 8),
+        new THREE.MeshStandardMaterial({ color: 0x455a64 }),
+      );
+      towerSupport.position.set(0, 13, 0);
+      towerGroup.add(towerSupport);
+      for (let i = 0; i < 8; i++) {
+        let angle = (i / 8) * Math.PI * 2;
+        let leg = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.5, 1.5, 26, 8),
+          new THREE.MeshStandardMaterial({ color: 0x90a4ae }),
+        );
+        leg.position.set(Math.cos(angle) * 20, 13, Math.sin(angle) * 20);
+        towerGroup.add(leg);
+      }
+      towerGroup.position.set(-220, 30, -220);
+      towerGroup.name = "watertower";
+      enableShadows(towerGroup);
+      scene.add(towerGroup);
+      clickableObjects.push(towerGroup);
+
+      // Markets
+      const market1 = new THREE.Group();
+      const m1Plaza = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 120),
+        new THREE.MeshStandardMaterial({ color: 0xd7ccc8 }),
+      );
+      m1Plaza.rotation.x = -Math.PI / 2;
+      m1Plaza.position.y = 0.1;
+      market1.add(m1Plaza);
+      const shopSpacing = 22;
+      for (let x = -2; x <= 2; x++) {
+        for (let z = -2; z <= 2; z++) {
+          if (Math.abs(x) === 2 || Math.abs(z) === 2) {
+            const stallBox = new THREE.Mesh(
+              new THREE.BoxGeometry(10, 6, 10),
+              new THREE.MeshStandardMaterial({ color: 0x8d6e63 }),
+            );
+            stallBox.position.set(x * shopSpacing, 3, z * shopSpacing);
+            market1.add(stallBox);
+            const awning = new THREE.Mesh(
+              new THREE.PlaneGeometry(12, 12),
+              new THREE.MeshStandardMaterial({
+                color: 0x4caf50,
+                side: THREE.DoubleSide,
+              }),
+            );
+            awning.rotation.x = -Math.PI / 3;
+            awning.position.set(x * shopSpacing, 8, z * shopSpacing + 2);
+            market1.add(awning);
+          }
+        }
+      }
+      [-1, 1].forEach((fx) => {
+        const fBase = new THREE.Mesh(
+          new THREE.CylinderGeometry(5, 5, 2, 16),
+          new THREE.MeshStandardMaterial({ color: 0x9e9e9e }),
+        );
+        fBase.position.set(fx * 14, 1, 0);
+        const fWater = new THREE.Mesh(
+          new THREE.CylinderGeometry(4.5, 4.5, 2.1, 16),
+          new THREE.MeshStandardMaterial({ color: 0x03a9f4 }),
+        );
+        fWater.position.set(fx * 14, 1, 0);
+        const fPillar = new THREE.Mesh(
+          new THREE.CylinderGeometry(1, 1.5, 5, 8),
+          new THREE.MeshStandardMaterial({ color: 0x9e9e9e }),
+        );
+        fPillar.position.set(fx * 14, 3.5, 0);
+        market1.add(fBase, fWater, fPillar);
+      });
+      market1.position.set(-230, 30, 230);
+      enableShadows(market1);
+      scene.add(market1);
+
+      const market2 = new THREE.Group();
+      const m2Plaza = new THREE.Mesh(
+        new THREE.PlaneGeometry(90, 90),
+        new THREE.MeshStandardMaterial({ color: 0xeeeeee }),
+      );
+      m2Plaza.rotation.x = -Math.PI / 2;
+      m2Plaza.position.y = 0.1;
+      market2.add(m2Plaza);
+      const shopSpacing2 = 20;
+      for (let x = -1.5; x <= 1.5; x++) {
+        for (let z = -1.5; z <= 1.5; z++) {
+          if (Math.abs(x) > 0.5 || Math.abs(z) > 0.5) {
+            const stallBox = new THREE.Mesh(
+              new THREE.BoxGeometry(10, 6, 10),
+              new THREE.MeshStandardMaterial({ color: 0xffb300 }),
+            );
+            stallBox.position.set(x * shopSpacing2, 3, z * shopSpacing2);
+            market2.add(stallBox);
+            const awning = new THREE.Mesh(
+              new THREE.PlaneGeometry(12, 12),
+              new THREE.MeshStandardMaterial({
+                color: 0xe53935,
+                side: THREE.DoubleSide,
+              }),
+            );
+            awning.rotation.x = -Math.PI / 3;
+            awning.position.set(x * shopSpacing2, 8, z * shopSpacing2 + 2);
+            market2.add(awning);
+          }
+        }
+      }
+      const planter = new THREE.Mesh(
+        new THREE.BoxGeometry(10, 2, 10),
+        new THREE.MeshStandardMaterial({ color: 0x5d4037 }),
+      );
+      planter.position.set(0, 1, 0);
+      const bush = new THREE.Mesh(
+        new THREE.SphereGeometry(4, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0x2e7d32 }),
+      );
+      bush.position.set(0, 4, 0);
+      market2.add(planter, bush);
+      market2.position.set(-110, 30, 230);
+      enableShadows(market2);
+      scene.add(market2);
+
+      const mSign1 = createSignboard("MARKET", 0x3e2723);
+      mSign1.position.set(-180, 30, 150);
+      scene.add(mSign1);
+      const mSign2 = createSignboard("MARKET", 0x3e2723);
+      mSign2.position.set(-150, 30, 180);
+      mSign2.rotation.y = Math.PI / 2;
+      scene.add(mSign2);
+
+      // ==========================================
+      // 4-STORY MULTI-BLOCK SCHOOL COMPLEX
+      // ==========================================
+      const schoolGroup = new THREE.Group();
+      const schoolMat = new THREE.MeshStandardMaterial({
+        color: 0xffb300,
+        roughness: 0.6,
+      });
+      const sAdmin = new THREE.Mesh(
+        new THREE.BoxGeometry(35, 32, 22),
+        schoolMat,
+      );
+      sAdmin.position.set(0, 16, 0);
+      const sWing1 = new THREE.Mesh(
+        new THREE.BoxGeometry(25, 24, 18),
+        schoolMat,
+      );
+      sWing1.position.set(-30, 12, 4);
+      const sWing2 = new THREE.Mesh(
+        new THREE.BoxGeometry(25, 24, 18),
+        schoolMat,
+      );
+      sWing2.position.set(30, 12, 4);
+      const sWing3 = new THREE.Mesh(
+        new THREE.BoxGeometry(22, 20, 18),
+        schoolMat,
+      );
+      sWing3.position.set(-30, 10, -16);
+      const sWing4 = new THREE.Mesh(
+        new THREE.BoxGeometry(22, 20, 18),
+        schoolMat,
+      );
+      sWing4.position.set(30, 10, -16);
+      const sSign = createSignboard("SCHOOL", 0xbf360c);
+      sSign.position.set(0, 34, 0);
+      sSign.scale.set(1.8, 1.8, 1.8);
+
+      schoolGroup.add(sAdmin, sWing1, sWing2, sWing3, sWing4, sSign);
+      schoolGroup.position.set(140, 30, -100);
+      enableShadows(schoolGroup);
+      scene.add(schoolGroup);
+
+      // ==========================================
+      // TWO-STORY CIRCULAR CENTRAL LIBRARY
+      // ==========================================
+      const libGroup = new THREE.Group();
+      const libStoneMat = new THREE.MeshStandardMaterial({
+        color: 0x8d6e63,
+        roughness: 0.7,
+      });
+      const libGlassMat = new THREE.MeshStandardMaterial({
+        color: 0x29b6f6,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.75,
+      });
+
+      const libF1 = new THREE.Mesh(
+        new THREE.CylinderGeometry(18, 18, 9, 32),
+        libStoneMat,
+      );
+      libF1.position.y = 4.5;
+      const libF1Glass = new THREE.Mesh(
+        new THREE.CylinderGeometry(18.2, 18.2, 5, 32),
+        libGlassMat,
+      );
+      libF1Glass.position.y = 4.5;
+
+      const libF2 = new THREE.Mesh(
+        new THREE.CylinderGeometry(15, 15, 9, 32),
+        libStoneMat,
+      );
+      libF2.position.y = 13.5;
+      const libF2Glass = new THREE.Mesh(
+        new THREE.CylinderGeometry(15.2, 15.2, 5, 32),
+        libGlassMat,
+      );
+      libF2Glass.position.y = 13.5;
+
+      const libDome = new THREE.Mesh(
+        new THREE.SphereGeometry(15, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0x3e2723 }),
+      );
+      libDome.position.y = 18;
+
+      const libSign = createSignboard("LIBRARY", 0x3e2723);
+      libSign.position.set(0, 25, 0);
+      libSign.scale.set(1.5, 1.5, 1.5);
+
+      libGroup.add(libF1, libF1Glass, libF2, libF2Glass, libDome, libSign);
+      libGroup.position.set(70, 30, -130);
+      enableShadows(libGroup);
+      scene.add(libGroup);
+
+      // ==========================================
+      // 3-STORY MULTI-BLOCK HOSPITAL
+      // ==========================================
+      const hospGroup = new THREE.Group();
+      const hospPanelMat = new THREE.MeshStandardMaterial({
+        color: 0xf0f4f8,
+        roughness: 0.3,
+      });
+      const hospGlassMat = new THREE.MeshStandardMaterial({
+        color: 0x1e3a8a,
+        roughness: 0.1,
+        metalness: 0.8,
+        transparent: true,
+        opacity: 0.8,
+      });
+
+      const hCenter = new THREE.Mesh(
+        new THREE.BoxGeometry(45, 24, 30),
+        hospPanelMat,
+      );
+      hCenter.position.set(0, 12, 0);
+      const hCenterGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(38, 18, 30.2),
+        hospGlassMat,
+      );
+      hCenterGlass.position.set(0, 12, 0);
+
+      const hWingL = new THREE.Mesh(
+        new THREE.BoxGeometry(32, 18, 26),
+        hospPanelMat,
+      );
+      hWingL.position.set(-38, 9, 2);
+      const hWingLGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(26, 14, 26.2),
+        hospGlassMat,
+      );
+      hWingLGlass.position.set(-38, 9, 2);
+
+      const hWingR = new THREE.Mesh(
+        new THREE.BoxGeometry(32, 18, 26),
+        hospPanelMat,
+      );
+      hWingR.position.set(38, 9, 2);
+      const hWingRGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(26, 14, 26.2),
+        hospGlassMat,
+      );
+      hWingRGlass.position.set(38, 9, 2);
+
+      const ambCanopy = new THREE.Mesh(
+        new THREE.BoxGeometry(18, 5, 12),
+        new THREE.MeshStandardMaterial({ color: 0xd32f2f }),
+      );
+      ambCanopy.position.set(0, 5, 18);
+      const hospSign = createSignboard("HOSPITAL", 0x1e3a8a);
+      hospSign.position.set(0, 25, 0);
+      hospSign.scale.set(2, 2, 2);
+
+      const ambBayMat = new THREE.MeshStandardMaterial({ color: 0x424242 });
+      [-15, 0, 15].forEach((bx) => {
+        const bay = new THREE.Mesh(new THREE.PlaneGeometry(8, 14), ambBayMat);
+        bay.rotation.x = -Math.PI / 2;
+        bay.position.set(bx, 0.15, 24);
+        hospGroup.add(bay);
+      });
+
+      hospBodyBox = hCenter;
+      hospGroup.add(
+        hCenter,
+        hCenterGlass,
+        hWingL,
+        hWingLGlass,
+        hWingR,
+        hWingRGlass,
+        ambCanopy,
+        hospSign,
+      );
+      hospGroup.position.set(120, 30, 70);
+      enableShadows(hospGroup);
+      scene.add(hospGroup);
+
+      // ==========================================
+      // 3x LARGER FIRE STATION
+      // ==========================================
+      const fireGroup = new THREE.Group();
+      const brickMat = new THREE.MeshStandardMaterial({
+        color: 0x8b3a2b,
+        roughness: 0.8,
+      });
+      const bayMat = new THREE.MeshStandardMaterial({
+        color: 0x1f1f1f,
+        roughness: 0.5,
+      });
+      const glassWinMat = new THREE.MeshStandardMaterial({
+        color: 0x87ceeb,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.7,
+      });
+
+      const fireMain = new THREE.Mesh(
+        new THREE.BoxGeometry(70, 30, 40),
+        brickMat,
+      );
+      fireMain.position.y = 15;
+      const fireWing = new THREE.Mesh(
+        new THREE.BoxGeometry(45, 22, 35),
+        brickMat,
+      );
+      fireWing.position.set(-50, 11, 3);
+
+      const fireBay1 = new THREE.Mesh(new THREE.BoxGeometry(16, 18, 2), bayMat);
+      fireBay1.position.set(-18, 9, 20.1);
+      const fireBay2 = new THREE.Mesh(new THREE.BoxGeometry(16, 18, 2), bayMat);
+      fireBay2.position.set(18, 9, 20.1);
+      const fireUpperWin = new THREE.Mesh(
+        new THREE.BoxGeometry(60, 6, 1),
+        glassWinMat,
+      );
+      fireUpperWin.position.set(0, 23, 20.1);
+      const fireSign = createSignboard("FIRE DEPT", 0xc62828);
+      fireSign.position.set(0, 30, 0);
+      fireSign.scale.set(2, 2, 2);
+
+      fireGroup.add(
+        fireMain,
+        fireWing,
+        fireBay1,
+        fireBay2,
+        fireUpperWin,
+        fireSign,
+      );
+      fireGroup.position.set(120, 30, 150);
+      enableShadows(fireGroup);
+      scene.add(fireGroup);
+
+      // ==========================================
+      // 10. PRECISE COLLISION ENGINE
+      // ==========================================
+      function isColliding(x, z, pr) {
+        let onBridge1 = Math.abs(z) < 22 + pr;
+        let onBridge4 = Math.abs(z - 200) < 22 + pr;
+        let onBridge5 = Math.abs(z + 200) < 22 + pr;
+
+        if (Math.abs(x) < 30 + pr) {
+          if (onBridge1 || onBridge4 || onBridge5) {
+            // Driving across bridges allowed
+          } else {
+            return true;
+          }
+        }
+
+        if (!isGateOpen && Math.abs(x - -70) < 2 + pr && Math.abs(z) < 24 + pr)
+          return true;
+        if (Math.abs(x - -70) < 3 + pr) {
+          if (
+            Math.abs(z - -20) < 3 + pr ||
+            Math.abs(z - 0) < 3 + pr ||
+            Math.abs(z - 20) < 3 + pr
+          )
+            return true;
+        }
+        if (Math.abs(x - -65) < 2.5 + pr && Math.abs(z - 0) < 2.5 + pr)
+          return true;
+
+        if (Math.abs(x - -220) < 30 + pr && Math.abs(z - -220) < 30 + pr)
+          return true;
+
+        let mx1 = x - -230;
+        let mz1 = z - 230;
+        if (Math.abs(mx1) < 60 && Math.abs(mz1) < 60) {
+          for (let i = -2; i <= 2; i++) {
+            for (let j = -2; j <= 2; j++) {
+              if (Math.abs(i) === 2 || Math.abs(j) === 2) {
+                if (
+                  Math.abs(mx1 - i * 22) < 5 + pr &&
+                  Math.abs(mz1 - j * 22) < 5 + pr
+                )
+                  return true;
+              }
+            }
+          }
+          if (Math.abs(mx1 - -14) < 5 + pr && Math.abs(mz1) < 5 + pr)
+            return true;
+          if (Math.abs(mx1 - 14) < 5 + pr && Math.abs(mz1) < 5 + pr)
+            return true;
+        }
+
+        let mx2 = x - -110;
+        let mz2 = z - 230;
+        if (Math.abs(mx2) < 45 && Math.abs(mz2) < 45) {
+          for (let i = -1.5; i <= 1.5; i++) {
+            for (let j = -1.5; j <= 1.5; j++) {
+              if (Math.abs(i) > 0.5 || Math.abs(j) > 0.5) {
+                if (
+                  Math.abs(mx2 - i * 20) < 5 + pr &&
+                  Math.abs(mz2 - j * 20) < 5 + pr
+                )
+                  return true;
+              }
+            }
+          }
+          if (Math.abs(mx2) < 5 + pr && Math.abs(mz2) < 5 + pr) return true;
+        }
+
+        if (Math.abs(x - 140) < 35 + pr && Math.abs(z - -100) < 22 + pr)
+          return true; // School
+        if (Math.abs(x - 70) < 18 + pr && Math.abs(z - -130) < 18 + pr)
+          return true; // Library
+        if (Math.abs(x - 120) < 42 + pr && Math.abs(z - 70) < 24 + pr)
+          return true; // Hospital
+        if (Math.abs(x - 120) < 55 + pr && Math.abs(z - 150) < 32 + pr)
+          return true; // Fire Station
+
+        if (!isDriving) {
+          if (
+            Math.abs(x - sportsCar.position.x) < 6.0 + pr &&
+            Math.abs(z - sportsCar.position.z) < 6.0 + pr
+          )
+            return true;
+        }
+        return false;
+      }
+
+      function isTreeOccupied(x, z) {
+        if (
+          Math.abs(x) < 35 ||
+          Math.abs(x + 200) < 25 ||
+          Math.abs(x - 200) < 25
+        )
+          return true;
+        if (
+          Math.abs(z) < 25 ||
+          Math.abs(z + 200) < 25 ||
+          Math.abs(z - 200) < 25
+        )
+          return true;
+        if (x < -170 && z < -170) return true;
+        if (x < -170 && z > 170) return true;
+        if (x < -60 && z > 180) return true;
+        if (x > 30 && z < -60) return true;
+        if (x > 30 && z > 30) return true;
+        return false;
+      }
+
+      const grid = new THREE.GridHelper(600, 150, 0x33691e, 0x4caf50);
+      grid.position.y = 30.05;
+      scene.add(grid);
+
+      const treeGeo = new THREE.ConeGeometry(5, 12, 5);
+      const trunkGeo = new THREE.CylinderGeometry(1, 1, 4);
+      const leafMat = new THREE.MeshStandardMaterial({
+        color: 0x2e7d32,
+        flatShading: true,
+      });
+      const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5d4037 });
+      for (let i = 0; i < 900; i++) {
+        let tx = Math.random() * 580 - 290,
+          tz = Math.random() * 580 - 290;
+        if (isTreeOccupied(tx, tz)) continue;
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.set(tx, 32, tz);
+        trunk.castShadow = true;
+        const leaves = new THREE.Mesh(treeGeo, leafMat);
+        leaves.position.set(tx, 38, tz);
+        leaves.castShadow = true;
+        scene.add(trunk, leaves);
+      }
+
+      // ==========================================
+      // 11. INTERACTION SYSTEM
+      // ==========================================
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      function updateTollyAndBarriers() {
+        dualBarriers.forEach((arm) => {
+          arm.rotation.z = isGateOpen ? 0 : -Math.PI / 2;
+        });
+        tollyArmPivot.rotation.z = isGateOpen ? 0.75 : 0;
+        if (isGateOpen) {
+          tollyGreenLightMat.emissive.setHex(0x00e676);
+          tollyGreenLightMat.emissiveIntensity = 0.8;
+          tollyRedLightMat.emissive.setHex(0x200000);
+          tollyRedLightMat.emissiveIntensity = 0.1;
+        } else {
+          tollyGreenLightMat.emissive.setHex(0x002000);
+          tollyGreenLightMat.emissiveIntensity = 0.1;
+          tollyRedLightMat.emissive.setHex(0xff1744);
+          tollyRedLightMat.emissiveIntensity = 0.8;
+        }
+        document.getElementById("val-gate").innerText = isGateOpen
+          ? "OPEN (DRAINING)"
+          : "CLOSED (SAFE)";
+        document.getElementById("val-gate").style.color = isGateOpen
+          ? "red"
+          : "green";
+        showToast(
+          isGateOpen
+            ? "Tolly: Barrier OPEN! Municipal flow admitted."
+            : "Tolly: Barrier CLOSED! Influx held safely at checkpoint.",
+        );
+      }
+
+      window.addEventListener("pointerdown", (e) => {
+        if (gameEnded) return;
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        const hits = raycaster.intersectObjects(clickableObjects, true);
+        if (hits.length > 0) {
+          let root = hits[0].object;
+          while (root.parent && root.parent !== scene) root = root.parent;
+          if (root.name === "tollgate" || root.name === "tolly") {
+            isGateOpen = !isGateOpen;
+            updateTollyAndBarriers();
+          }
+          if (root.name === "watertower") {
+            waterRouting = waterRouting === "TOWN" ? "HOSPITAL" : "TOWN";
+            tank.material.color.setHex(
+              waterRouting === "TOWN" ? 0x1976d2 : 0x00e676,
+            );
+            showToast("Water Diverted: " + waterRouting);
+          }
+        }
+      });
+
+      document
+        .getElementById("allocation-slider")
+        .addEventListener("input", (e) => {
+          hospitalWaterAllocation = parseInt(e.target.value);
+          document.getElementById("val-allocation").innerText =
+            hospitalWaterAllocation + "%";
+        });
+
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.innerText = msg;
+        t.style.display = "block";
+        setTimeout(() => {
+          t.style.display = "none";
+        }, 2500);
+      }
+
+      function showModal(title, text) {
+        gameEnded = true;
+        document.getElementById("modal-title").innerText = title;
+        document.getElementById("modal-text").innerText = text;
+        document.getElementById("modal-overlay").style.display = "flex";
+      }
+
+      function startNewGame() {
+        wellness = 100;
+        waterReserve = 100;
+        gameTimeMinutes = 360;
+        currentDay = 1;
+        gateTimer = 0;
+        isGateOpen = true;
+        gameEnded = false;
+        hospitalNeed = 30;
+
+        playerGroup.position.set(-15, 30, -10);
+        sportsCar.position.set(-15, 30, 0);
+        isDriving = false;
+        playerGroup.visible = true;
+        carSpeed = 0;
+
+        document.getElementById("modal-overlay").style.display = "none";
+        updateTollyAndBarriers();
+      }
+
+      // ==========================================
+      // 12. TIME & WEATHER SYSTEM (1 real sec = 12 in-game mins)
+      // ==========================================
+      function updateTimeAndWeather(delta) {
+        if (gameEnded) return;
+
+        gameTimeMinutes += delta * 12;
+
+        if (gameTimeMinutes >= 1440) {
+          gameTimeMinutes %= 1440;
+          currentDay++;
+        }
+
+        // WIN CONDITION: Finishing Day 2 triggers the win screen automatically
+        if (currentDay > 2) {
+          showModal(
+            "Congrats!, you won",
+            "Congrats!, you won , you maintained the minimum welfare amount",
+          );
+          return;
+        }
+
+        let hours = Math.floor(gameTimeMinutes / 60);
+        let mins = Math.floor(gameTimeMinutes % 60);
+        let timeStr = `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+
+        let phase = "";
+        let targetSkyColor, targetSunIntensity, targetHemiIntensity;
+
+        if (hours >= 6 && hours < 12) {
+          phase = "Morning 🌅";
+          targetSkyColor = new THREE.Color(0xa0c4ff);
+          targetSunIntensity = 1.2;
+          targetHemiIntensity = 0.7;
+        } else if (hours >= 12 && hours < 18) {
+          phase = "Afternoon ☀️";
+          targetSkyColor = new THREE.Color(0x87ceeb);
+          targetSunIntensity = 1.5;
+          targetHemiIntensity = 0.8;
+        } else if (hours >= 18 && hours < 24) {
+          phase = "Evening 🌇";
+          targetSkyColor = new THREE.Color(0xfd9e02);
+          targetSunIntensity = 0.6;
+          targetHemiIntensity = 0.4;
+        } else {
+          phase = "Night 🌙";
+          targetSkyColor = new THREE.Color(0x0b132b);
+          targetSunIntensity = 0.15;
+          targetHemiIntensity = 0.2;
+        }
+
+        scene.background.lerp(targetSkyColor, 0.05);
+        scene.fog.color.copy(scene.background);
+        sun.intensity = THREE.MathUtils.lerp(
+          sun.intensity,
+          targetSunIntensity,
+          0.05,
+        );
+        hemiLight.intensity = THREE.MathUtils.lerp(
+          hemiLight.intensity,
+          targetHemiIntensity,
+          0.05,
+        );
+
+        document.getElementById("time-hud").innerHTML =
+          `Day ${currentDay} | ${timeStr}<br>${phase}`;
+      }
+
+      // ==========================================
+      // 13. SIMULATION TICK & ANIMATION LOOP
+      // ==========================================
+      setInterval(() => {
+        if (gameEnded) return;
+
+        eventTick++;
+        if (eventTick % 3 === 0) {
+          hospitalNeed = Math.min(100, hospitalNeed + 2);
+        }
+        if (eventTick % 10 === 0 && Math.random() < 0.4) {
+          hospitalNeed = Math.min(100, hospitalNeed + 15);
+          showToast("Hospital surge!");
+        }
+
+        const waterToHospital = (waterReserve * hospitalWaterAllocation) / 100;
+        const hospitalMet = waterToHospital >= hospitalNeed;
+
+        if (!hospitalMet && hospitalNeed > 0) {
+          wellness = Math.max(0, wellness - 3);
+          hospBodyBox.material.color.setHex(0xffcdd2);
+        } else if (hospitalMet) {
+          hospBodyBox.material.color.setHex(0xf0f4f8);
+          hospitalNeed = Math.max(0, hospitalNeed - 4);
+          if (hospitalNeed > 40) {
+            wellness = Math.min(100, wellness + 2);
+          }
+        }
+
+        if (isGateOpen) {
+          gateTimer++;
+          if (gateTimer > 4) {
+            waterReserve = Math.max(0, waterReserve - 5);
+            wellness = Math.max(0, wellness - 1);
+          }
+        } else {
+          gateTimer = 0;
+          waterReserve = Math.min(100, waterReserve + 3);
+          if (wellness < 100 && hospitalMet) {
+            wellness = Math.min(100, wellness + 0.5);
+          }
+        }
+
+        if (wellness <= 0) {
+          showModal(
+            "Game Over",
+            "Sorry, you lost, you didn't maintain the minimum welfare amount",
+          );
+          return;
+        }
+
+        document.getElementById("val-wellness").innerText =
+          Math.round(wellness) + "%";
+        document.getElementById("wellness-bar").style.width = wellness + "%";
+        document.getElementById("wellness-bar").style.background =
+          wellness > 40 ? "#4caf50" : "#f44336";
+
+        document.getElementById("val-water").innerText =
+          Math.round(waterReserve) + "%";
+        document.getElementById("water-bar").style.width = waterReserve + "%";
+        document.getElementById("water-bar").style.background =
+          waterReserve > 30 ? "#2196f3" : "#ff9800";
+
+        document.getElementById("val-hospital").innerText =
+          Math.round(hospitalNeed) + "%";
+        document.getElementById("hospital-bar").style.width =
+          Math.min(100, hospitalNeed) + "%";
+      }, 1000);
+
+      const walkSpeed = 0.55;
+      let walkClock = 0;
+      const maxForwardSpeed = 0.85,
+        maxReverseSpeed = -0.35,
+        accelRate = 0.012,
+        brakeDecel = 0.022,
+        reverseRate = 0.008,
+        rollingFriction = 0.985;
+
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "p" || e.key === "P") {
+          renderer.render(scene, camera);
+          const imageURI = renderer.domElement.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.download = "PulseTown_Master_View.png";
+          link.href = imageURI;
+          link.click();
+        }
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        const delta = clock.getDelta();
+        updateTimeAndWeather(delta);
+
+        if (!gameEnded) {
+          let activeTarget = isDriving ? sportsCar : playerGroup;
+
+          if (isDriving) {
+            const isPressingForward = keys.w || keys.ArrowUp;
+            const isPressingBrake = keys.s || keys.ArrowDown;
+
+            if (isPressingBrake) {
+              if (carSpeed > 0.005) {
+                carSpeed -= brakeDecel;
+                if (carSpeed < 0) carSpeed = 0;
+                brakeHoldTimer = 0;
+              } else if (carSpeed < -0.005) {
+                carSpeed -= reverseRate;
+              } else {
+                carSpeed = 0;
+                brakeHoldTimer += 1 / 60;
+                if (brakeHoldTimer >= 1.8) {
+                  carSpeed = -0.02;
+                }
+              }
+            } else if (isPressingForward) {
+              brakeHoldTimer = 0;
+              if (carSpeed < -0.005) {
+                carSpeed += brakeDecel;
+                if (carSpeed > 0) carSpeed = 0;
+              } else {
+                carSpeed += accelRate;
+              }
+            } else {
+              brakeHoldTimer = 0;
+              carSpeed *= rollingFriction;
+              if (Math.abs(carSpeed) < 0.003) carSpeed = 0;
+            }
+            carSpeed = Math.max(
+              maxReverseSpeed,
+              Math.min(carSpeed, maxForwardSpeed),
+            );
+
+            let turnRate = 0.028;
+            if (keys[" "]) {
+              turnRate = 0.05;
+              carSpeed *= 0.985;
+            }
+
+            if (Math.abs(carSpeed) > 0.02) {
+              const steerDir = Math.sign(carSpeed);
+              if (keys.a || keys.ArrowLeft) carHeading += turnRate * steerDir;
+              if (keys.d || keys.ArrowRight) carHeading -= turnRate * steerDir;
+              sportsCar.rotation.y = carHeading;
+              const wheelAngle =
+                keys.a || keys.ArrowLeft
+                  ? 0.45
+                  : keys.d || keys.ArrowRight
+                    ? -0.45
+                    : 0;
+              frontLeftAssembly.rotation.y = wheelAngle;
+              frontRightAssembly.rotation.y = wheelAngle;
+            } else {
+              frontLeftAssembly.rotation.y = 0;
+              frontRightAssembly.rotation.y = 0;
+            }
+
+            let targetVelocity = new THREE.Vector3(
+              -Math.sin(carHeading),
+              0,
+              -Math.cos(carHeading),
+            ).multiplyScalar(carSpeed);
+            let nextX = sportsCar.position.x + targetVelocity.x;
+            let nextZ = sportsCar.position.z + targetVelocity.z;
+
+            if (
+              nextX > -290 &&
+              nextX < 290 &&
+              !isColliding(nextX, sportsCar.position.z, 4.0)
+            )
+              sportsCar.position.x = nextX;
+            else carSpeed *= -0.2;
+            if (
+              nextZ > -290 &&
+              nextZ < 290 &&
+              !isColliding(sportsCar.position.x, nextZ, 4.0)
+            )
+              sportsCar.position.z = nextZ;
+            else carSpeed *= -0.2;
+
+            carWheels.forEach((w) => (w.rotation.x -= carSpeed * 0.35));
+            playerGroup.position.copy(sportsCar.position);
+          } else {
+            let moveX = 0,
+              moveZ = 0;
+            if (keys.w || keys.ArrowUp) moveZ -= 1;
+            if (keys.s || keys.ArrowDown) moveZ += 1;
+            if (keys.a || keys.ArrowLeft) moveX -= 1;
+            if (keys.d || keys.ArrowRight) moveX += 1;
+            if (moveX !== 0 && moveZ !== 0) {
+              const l = Math.sqrt(moveX * moveX + moveZ * moveZ);
+              moveX /= l;
+              moveZ /= l;
+            }
+
+            if (moveX !== 0 || moveZ !== 0) {
+              let nextX = playerGroup.position.x + moveX * walkSpeed;
+              let nextZ = playerGroup.position.z + moveZ * walkSpeed;
+              if (
+                nextX > -290 &&
+                nextX < 290 &&
+                !isColliding(nextX, playerGroup.position.z, 1.5)
+              )
+                playerGroup.position.x = nextX;
+              if (
+                nextZ > -290 &&
+                nextZ < 290 &&
+                !isColliding(playerGroup.position.x, nextZ, 1.5)
+              )
+                playerGroup.position.z = nextZ;
+              playerGroup.rotation.y = Math.atan2(moveX, moveZ);
+              walkClock += 0.14;
+              pArmL.rotation.x = Math.sin(walkClock) * 1.1;
+              pArmR.rotation.x = Math.sin(walkClock + Math.PI) * 1.1;
+              pLegL.rotation.x = Math.sin(walkClock + Math.PI) * 0.9;
+              pLegR.rotation.x = Math.sin(walkClock) * 0.9;
+              pBodyRig.position.y = Math.abs(Math.sin(walkClock * 2)) * 0.35;
+            } else {
+              pArmL.rotation.x = 0;
+              pArmR.rotation.x = 0;
+              pLegL.rotation.x = 0;
+              pLegR.rotation.x = 0;
+              walkClock = 0;
+            }
+            playerGroup.position.y = 30;
+          }
+
+          const offset = new THREE.Vector3().subVectors(
+            camera.position,
+            controls.target,
+          );
+          controls.target.copy(activeTarget.position);
+          camera.position.copy(activeTarget.position).add(offset);
+        }
+
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener("resize", () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
+  </body>
+</html>
